@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 import { getCurrentUser, signOut } from "./supabaseService";
-import Auth from "./components/Auth";
 import SeriesList from "./components/SeriesList";
 import UploadPage from "./components/UploadPage";
 import QuestionsGridView from "./components/QuestionsGridView";
