@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Upload, FileSpreadsheet, ArrowRight } from "lucide-react";
 import { QCMEntry } from "../types";
 import AutocompleteInput from "./AutocompleteInput";
+import { syncLocalDataToSupabase } from "../supabaseService";
+import { toast } from "sonner";
 
 interface UploadPageProps {
   onSeriesUploaded: (data: {
@@ -9,7 +11,9 @@ interface UploadPageProps {
     objective: string;
     faculty: string;
     year: string;
+    seriesId?: string;
   }) => void;
+  onBack?: () => void;
 }
 
 const OBJECTIVES = [
@@ -25,13 +29,13 @@ const OBJECTIVES = [
   "Brûlures cutanées récentes",
   "Cancer broncho-pulmonaire",
   "Cancer du cavum",
-  "Cancer du col de l’utérus",
+  "Cancer du col de l'utérus",
   "Cancer du sein",
   "Cancers colorectaux",
   "Céphalées",
   "Coma",
   "Contraception",
-  "Déshydratations aiguës de l’enfant",
+  "Déshydratations aiguës de l'enfant",
   "Diabète sucré",
   "Diarrhées chroniques",
   "Douleurs thoraciques aiguës",
@@ -82,8 +86,8 @@ const OBJECTIVES = [
   "Traumatismes crâniens",
   "Troubles acido-basiques",
   "Troubles anxieux",
-  "Troubles de l’humeur",
-  "Troubles de l’hydratation/ Dyskaliémies",
+  "Troubles de l'humeur",
+  "Troubles de l'hydratation/ Dyskaliémies",
   "Tuberculose ",
   "Tumeurs de la prostate",
   "UGD",
@@ -128,13 +132,14 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-export default function UploadPage({ onSeriesUploaded }: UploadPageProps) {
+export default function UploadPage({ onSeriesUploaded, onBack }: UploadPageProps) {
   const [objective, setObjective] = useState("");
   const [faculty, setFaculty] = useState("");
   const [year, setYear] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileUpload = (file: File) => {
     setUploadedFile(file);
@@ -158,7 +163,7 @@ export default function UploadPage({ onSeriesUploaded }: UploadPageProps) {
     if (file) handleFileUpload(file);
   };
 
-  const processAndContinue = () => {
+  const processAndContinue = async () => {
     if (!uploadedFile) {
       setError("Veuillez uploader un fichier.");
       setTimeout(() => setError(null), 3000);
@@ -171,26 +176,70 @@ export default function UploadPage({ onSeriesUploaded }: UploadPageProps) {
       return;
     }
 
+    setIsProcessing(true);
+
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
         const fileExtension = uploadedFile.name.split('.').pop()?.toLowerCase();
         
+        let questions: QCMEntry[] = [];
+        
         if (fileExtension === 'csv') {
-          const questions = parseCSV(text);
-          onSeriesUploaded({ questions, objective, faculty, year });
+          questions = parseCSV(text);
         } else if (fileExtension === 'json') {
-          const questions = JSON.parse(text);
-          onSeriesUploaded({ questions, objective, faculty, year });
+          questions = JSON.parse(text);
         } else {
           setError("Format de fichier non supporté. Utilisez CSV ou JSON.");
           setTimeout(() => setError(null), 3000);
+          setIsProcessing(false);
+          return;
+        }
+
+        // Sauvegarder dans localStorage (backup local)
+        localStorage.setItem("qcm-questions", JSON.stringify(questions));
+        localStorage.setItem("qcm-metadata", JSON.stringify({ objective, faculty, year }));
+
+        // Sauvegarder dans Supabase
+        try {
+          const seriesId = await syncLocalDataToSupabase(
+            { objective, faculty, year },
+            questions
+          );
+          
+          toast.success('✅ Série sauvegardée dans le cloud !', {
+            description: `${questions.length} question${questions.length > 1 ? 's' : ''} synchronisée${questions.length > 1 ? 's' : ''}`
+          });
+          
+          onSeriesUploaded({ 
+            questions, 
+            objective, 
+            faculty, 
+            year,
+            seriesId 
+          });
+        } catch (supabaseError: any) {
+          console.error('Erreur Supabase:', supabaseError);
+          
+          // Même en cas d'erreur Supabase, on continue en mode local
+          toast.warning('⚠️ Sauvegarde locale uniquement', {
+            description: 'La synchronisation cloud a échoué mais vos données sont sauvegardées localement.'
+          });
+          
+          onSeriesUploaded({ 
+            questions, 
+            objective, 
+            faculty, 
+            year
+          });
         }
       } catch (err) {
         console.error("Erreur import fichier:", err);
         setError("Erreur lors de la lecture du fichier.");
         setTimeout(() => setError(null), 3000);
+      } finally {
+        setIsProcessing(false);
       }
     };
     reader.readAsText(uploadedFile);
@@ -250,6 +299,16 @@ export default function UploadPage({ onSeriesUploaded }: UploadPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
       <div className="max-w-4xl mx-auto">
+        {/* Back Button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="mb-4 flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900"
+          >
+            ← Retour
+          </button>
+        )}
+
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="mb-2 text-indigo-600">Plateforme de Gestion QCM Médicaux</h1>
@@ -283,7 +342,10 @@ export default function UploadPage({ onSeriesUploaded }: UploadPageProps) {
               {uploadedFile ? (
                 <div className="space-y-3">
                   <FileSpreadsheet className="w-16 h-16 mx-auto text-green-600" />
-                  <p className="text-green-600">{uploadedFile.name}</p>
+                  <p className="text-green-600 font-medium">{uploadedFile.name}</p>
+                  <p className="text-gray-500 text-sm">
+                    {(uploadedFile.size / 1024).toFixed(2)} KB
+                  </p>
                   <button
                     onClick={() => setUploadedFile(null)}
                     className="text-gray-500 hover:text-gray-700 underline"
@@ -377,15 +439,24 @@ export default function UploadPage({ onSeriesUploaded }: UploadPageProps) {
           {/* Continue Button */}
           <button
             onClick={processAndContinue}
-            disabled={!uploadedFile || !objective || !faculty || !year}
+            disabled={!uploadedFile || !objective || !faculty || !year || isProcessing}
             className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 transition-all ${
-              uploadedFile && objective && faculty && year
+              uploadedFile && objective && faculty && year && !isProcessing
                 ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-lg'
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
           >
-            Continuer vers les questions
-            <ArrowRight className="w-5 h-5" />
+            {isProcessing ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Traitement en cours...
+              </>
+            ) : (
+              <>
+                Continuer vers les questions
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
           </button>
 
           {/* Help Section */}
@@ -394,16 +465,14 @@ export default function UploadPage({ onSeriesUploaded }: UploadPageProps) {
             <code className="text-xs bg-white px-2 py-1 rounded block overflow-x-auto mb-2">
               question,propositions,cas_clinique_id
             </code>
-            <p className="text-blue-700">
+            <p className="text-blue-700 text-sm mb-3">
               Exemple : "Question?","Réponse A;Réponse B;Réponse C",""
             </p>
-            <a
-              href="/exemple-qcm.csv"
-              download="exemple-qcm.csv"
-              className="inline-block mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              📥 Télécharger fichier exemple
-            </a>
+            <div className="space-y-2 text-sm text-blue-800">
+              <p>✅ Séparateur de propositions : <strong>;</strong> ou <strong>|</strong></p>
+              <p>✅ Questions d'un même cas clinique : même <strong>cas_clinique_id</strong></p>
+              <p>✅ QCM simple : laissez <strong>cas_clinique_id</strong> vide</p>
+            </div>
           </div>
         </div>
       </div>
