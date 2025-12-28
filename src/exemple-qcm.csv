@@ -1,0 +1,22 @@
+question,propositions,cas_clinique_id
+"Quel est le principal symptôme de l'asthme?","Dyspnée sifflante;Toux sèche;Douleur thoracique;Fièvre",
+"Quelle est la complication aiguë du diabète de type 1?","Acidocétose diabétique;Hypoglycémie;Rétinopathie;Néphropathie",
+"Quel est le traitement de première intention de l'HTA chez un sujet jeune?","IEC ou ARA2;Bêtabloquants;Diurétiques;Inhibiteurs calciques",
+"Patient de 65 ans, dyspnée progressive, œdèmes des membres inférieurs bilatéraux, turgescence jugulaire. Quel diagnostic?","Insuffisance cardiaque;Embolie pulmonaire;Pneumonie;BPCO","cas_cardio_001"
+"Quel examen paraclinique demander en premier lieu?","ECG et radiographie thoracique;Scanner thoracique;Coronarographie;IRM cardiaque","cas_cardio_001"
+"Quel dosage biologique est le plus spécifique?","BNP ou NT-proBNP;Troponine;CRP;D-dimères","cas_cardio_001"
+"Quelle classe thérapeutique initier en première intention?","Diurétiques de l'anse;Bêtabloquants;IEC;Digitaliques","cas_cardio_001"
+"Homme de 55 ans, douleur thoracique rétrosternale constrictive irradiant au bras gauche depuis 30 minutes. Quelle est votre première hypothèse?","Infarctus du myocarde;Péricardite;Embolie pulmonaire;Dissection aortique","cas_cardio_002"
+"Quel est le premier geste thérapeutique?","Aspirine 250-500 mg à croquer;Morphine IV;Oxygène;Thrombolyse","cas_cardio_002"
+"Quel marqueur biologique faut-il doser?","Troponine;CK-MB;Myoglobine;LDH","cas_cardio_002"
+"Femme de 45 ans, toux productive, fièvre à 39°C, douleur thoracique latérale droite. Quel diagnostic?","Pneumonie aiguë communautaire;Bronchite aiguë;Tuberculose;Cancer bronchique",
+"Quelle est la principale complication de la BPCO?","Insuffisance respiratoire chronique;Pneumothorax;Hémoptysie;Fibrose pulmonaire",
+"Quel est le principal mode de transmission de la tuberculose?","Aérienne (gouttelettes);Sanguine;Féco-orale;Cutanée",
+"Quel est le principal signe biologique de l'hépatite virale aiguë?","Élévation des transaminases;Hyperbilirubinémie;Thrombopénie;Hypoalbuminémie",
+"Quelle est la complication majeure de la cirrhose?","Carcinome hépatocellulaire;Insuffisance rénale;Pancréatite;Cholécystite",
+"Patient diabétique de 60 ans, créatinine à 250 µmol/L, DFG à 25 mL/min. Quel stade d'IRC?","Stade 4 (IRC sévère);Stade 2 (IRC modérée);Stade 5 (IRC terminale);Stade 3 (IRC modérée)","cas_nephro_001"
+"Quelle est la cause la plus fréquente d'IRA chez le sujet âgé?","Déshydratation;Glomérulonéphrite;Obstacle urologique;Médicaments néphrotoxiques",
+"Femme de 30 ans, brûlures mictionnelles, pollakiurie. Quel diagnostic?","Cystite aiguë;Pyélonéphrite;Urétrite;Vaginite",
+"Enfant de 5 ans, fièvre à 40°C, raideur de nuque, photophobie. Quelle est votre première hypothèse?","Méningite bactérienne;Encéphalite virale;Migraine;Syndrome grippal","cas_neuro_001"
+"Quel examen paraclinique réaliser en urgence?","Ponction lombaire;Scanner cérébral;IRM cérébrale;EEG","cas_neuro_001"
+"Quel traitement antibiotique débuter en urgence (avant résultats)?","Ceftriaxone IV;Amoxicilline orale;Gentamicine IV;Vancomycine IV","cas_neuro_001"
