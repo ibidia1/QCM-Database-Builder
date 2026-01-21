@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { QCMEntry, SeriesMetadata } from "../types";
 import { ArrowLeft, Save, ChevronLeft, ChevronRight, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { updateQuestion } from "../supabaseService";
 
 interface QuestionDetailPageProps {
   currentQuestionId: string;
@@ -10,7 +9,6 @@ interface QuestionDetailPageProps {
   metadata: SeriesMetadata;
   onBack: () => void;
   onSave: (questions: QCMEntry[]) => void;
-  seriesId?: string | null;
 }
 
 const TAGS = ["Clinique", "Anatomie", "Biologie", "Physiologie", "Épidémiologie"];
@@ -21,16 +19,13 @@ export default function QuestionDetailPage({
   metadata,
   onBack,
   onSave,
-  seriesId,
 }: QuestionDetailPageProps) {
   const [questions, setQuestions] = useState<QCMEntry[]>(allQuestions);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [subCourses, setSubCourses] = useState<string[]>([]);
   const [newSubCourse, setNewSubCourse] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Trouver les questions du cas clinique actuel ou la question simple
   const currentQuestion = questions.find(q => q.id === currentQuestionId);
   const relatedQuestions = currentQuestion?.clinicalCaseId
     ? questions.filter(q => q.clinicalCaseId === currentQuestion.clinicalCaseId)
@@ -52,7 +47,6 @@ export default function QuestionDetailPage({
   }, [subCourses]);
 
   useEffect(() => {
-    // Sauvegarder dans localStorage à chaque modification
     if (questions.length > 0) {
       localStorage.setItem("qcm-questions", JSON.stringify(questions));
     }
@@ -61,25 +55,12 @@ export default function QuestionDetailPage({
   const currentQ = relatedQuestions[currentIndex];
   const optionLetters = currentQ ? currentQ.options.map((_, i) => String.fromCharCode(65 + i)) : [];
 
-  const updateCurrentQuestion = async (updates: Partial<QCMEntry>) => {
-    // Mise à jour locale
+  const updateCurrentQuestion = (updates: Partial<QCMEntry>) => {
     const updatedQuestions = questions.map(q =>
       q.id === currentQ.id ? { ...q, ...updates, updatedAt: new Date().toISOString() } : q
     );
     setQuestions(updatedQuestions);
     setHasUnsavedChanges(true);
-
-    // Auto-sauvegarde dans Supabase si l'ID est un UUID (format Supabase)
-    const isSupabaseId = currentQ.id.includes('-') && currentQ.id.length > 20;
-    if (isSupabaseId && seriesId) {
-      try {
-        await updateQuestion(currentQ.id, updates);
-        console.log('✅ Auto-sauvegarde Supabase réussie');
-      } catch (error) {
-        console.error('❌ Erreur auto-sauvegarde Supabase:', error);
-        // On continue en mode local
-      }
-    }
   };
 
   const toggleCorrectAnswer = (letter: string) => {
@@ -106,33 +87,12 @@ export default function QuestionDetailPage({
     }
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      // Sauvegarder localement
-      onSave(questions);
-      
-      // Si on a un seriesId et que les questions ont des UUID, on synchronise avec Supabase
-      const isSupabaseSync = seriesId && currentQ.id.includes('-') && currentQ.id.length > 20;
-      
-      if (isSupabaseSync) {
-        // La synchronisation se fait déjà automatiquement via updateCurrentQuestion
-        toast.success('✅ Modifications sauvegardées (local + cloud)', {
-          description: 'Vos données sont synchronisées'
-        });
-      } else {
-        toast.success('✅ Modifications sauvegardées localement', {
-          description: 'Sauvegarde locale uniquement'
-        });
-      }
-      
-      setHasUnsavedChanges(false);
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      toast.error('❌ Erreur lors de la sauvegarde');
-    } finally {
-      setIsSaving(false);
-    }
+  const handleSave = () => {
+    onSave(questions);
+    toast.success('✅ Modifications sauvegardées', {
+      description: 'Les données sont sauvegardées localement'
+    });
+    setHasUnsavedChanges(false);
   };
 
   const updateOption = (index: number, value: string) => {
@@ -195,7 +155,6 @@ export default function QuestionDetailPage({
   }
 
   const isClinicalCase = relatedQuestions.length > 1;
-  const isSupabaseSync = seriesId && currentQ.id.includes('-') && currentQ.id.length > 20;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
@@ -227,29 +186,13 @@ export default function QuestionDetailPage({
                 <div className="text-gray-600 text-sm">
                   {metadata.objective} • {metadata.faculty} • {metadata.year}
                 </div>
-                {isSupabaseSync && (
-                  <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    Cloud sync
-                  </div>
-                )}
               </div>
               <button
                 onClick={handleSave}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
-                {isSaving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Sauvegarde...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Sauvegarder
-                  </>
-                )}
+                <Save className="w-4 h-4" />
+                Sauvegarder
               </button>
             </div>
             
