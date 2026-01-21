@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import { QCMEntry, SeriesMetadata } from "./types";
 import { Toaster } from "sonner";
-import SeriesList from "./components/SeriesList";
 import UploadPage from "./components/UploadPage";
 import QuestionsGridView from "./components/QuestionsGridView";
 import QuestionDetailPage from "./components/QuestionDetailPage";
 
-type ViewType = "seriesList" | "upload" | "grid" | "detail";
+type ViewType = "upload" | "grid" | "detail";
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<ViewType>("seriesList");
+  const [currentView, setCurrentView] = useState<ViewType>("upload");
   const [questions, setQuestions] = useState<QCMEntry[]>([]);
   const [metadata, setMetadata] = useState<SeriesMetadata>({
     objective: "",
@@ -17,24 +16,12 @@ export default function App() {
     year: "",
   });
   const [currentQuestionId, setCurrentQuestionId] = useState<string>("");
-  const [seriesId, setSeriesId] = useState<string | null>(null);
-
-  const handleSeriesLoad = (data: { metadata: SeriesMetadata; questions: QCMEntry[] }) => {
-    setMetadata(data.metadata);
-    setQuestions(data.questions);
-    setCurrentView("grid");
-  };
-
-  const handleNewSeries = () => {
-    setCurrentView("upload");
-  };
 
   const handleSeriesUploaded = (data: {
     questions: QCMEntry[];
     objective: string;
     faculty: string;
     year: string;
-    seriesId?: string;
   }) => {
     setQuestions(data.questions);
     setMetadata({
@@ -42,7 +29,6 @@ export default function App() {
       faculty: data.faculty,
       year: data.year,
     });
-    setSeriesId(data.seriesId || null);
     setCurrentView("grid");
   };
 
@@ -55,8 +41,8 @@ export default function App() {
     setCurrentView("grid");
   };
 
-  const handleBackToSeriesList = () => {
-    setCurrentView("seriesList");
+  const handleBackToUpload = () => {
+    setCurrentView("upload");
   };
 
   const handleSaveQuestions = (updatedQuestions: QCMEntry[]) => {
@@ -67,17 +53,9 @@ export default function App() {
     <>
       <Toaster position="top-right" />
       
-      {currentView === "seriesList" && (
-        <SeriesList 
-          onSeriesLoad={handleSeriesLoad}
-          onNewSeries={handleNewSeries}
-        />
-      )}
-
       {currentView === "upload" && (
         <UploadPage
           onSeriesUploaded={handleSeriesUploaded}
-          onBack={handleBackToSeriesList}
         />
       )}
 
@@ -86,7 +64,7 @@ export default function App() {
           questions={questions}
           metadata={metadata}
           onQuestionSelect={handleQuestionSelect}
-          onBack={handleBackToSeriesList}
+          onBack={handleBackToUpload}
         />
       )}
 
@@ -97,7 +75,6 @@ export default function App() {
           metadata={metadata}
           onBack={handleBackToGrid}
           onSave={handleSaveQuestions}
-          seriesId={seriesId}
         />
       )}
     </>
