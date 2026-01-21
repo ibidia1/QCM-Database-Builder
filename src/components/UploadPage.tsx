@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Upload, FileSpreadsheet, ArrowRight } from "lucide-react";
 import { QCMEntry } from "../types";
 import AutocompleteInput from "./AutocompleteInput";
-import { syncLocalDataToSupabase } from "../supabaseService";
 import { toast } from "sonner";
 
 interface UploadPageProps {
@@ -11,9 +10,7 @@ interface UploadPageProps {
     objective: string;
     faculty: string;
     year: string;
-    seriesId?: string;
   }) => void;
-  onBack?: () => void;
 }
 
 const OBJECTIVES = [
@@ -101,7 +98,6 @@ const FACULTIES = [
   "FMSF",
 ];
 
-// Générer les années de 2019 à 2035
 const YEARS = Array.from({ length: 2035 - 2019 + 1 }, (_, i) => String(2019 + i));
 
 function generateUniqueId(prefix: string = "qcm"): string {
@@ -132,7 +128,7 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-export default function UploadPage({ onSeriesUploaded, onBack }: UploadPageProps) {
+export default function UploadPage({ onSeriesUploaded }: UploadPageProps) {
   const [objective, setObjective] = useState("");
   const [faculty, setFaculty] = useState("");
   const [year, setYear] = useState("");
@@ -197,43 +193,20 @@ export default function UploadPage({ onSeriesUploaded, onBack }: UploadPageProps
           return;
         }
 
-        // Sauvegarder dans localStorage (backup local)
+        // Sauvegarder dans localStorage
         localStorage.setItem("qcm-questions", JSON.stringify(questions));
         localStorage.setItem("qcm-metadata", JSON.stringify({ objective, faculty, year }));
 
-        // Sauvegarder dans Supabase
-        try {
-          const seriesId = await syncLocalDataToSupabase(
-            { objective, faculty, year },
-            questions
-          );
-          
-          toast.success('✅ Série sauvegardée dans le cloud !', {
-            description: `${questions.length} question${questions.length > 1 ? 's' : ''} synchronisée${questions.length > 1 ? 's' : ''}`
-          });
-          
-          onSeriesUploaded({ 
-            questions, 
-            objective, 
-            faculty, 
-            year,
-            seriesId 
-          });
-        } catch (supabaseError: any) {
-          console.error('Erreur Supabase:', supabaseError);
-          
-          // Même en cas d'erreur Supabase, on continue en mode local
-          toast.warning('⚠️ Sauvegarde locale uniquement', {
-            description: 'La synchronisation cloud a échoué mais vos données sont sauvegardées localement.'
-          });
-          
-          onSeriesUploaded({ 
-            questions, 
-            objective, 
-            faculty, 
-            year
-          });
-        }
+        toast.success('✅ Série créée avec succès !', {
+          description: `${questions.length} question${questions.length > 1 ? 's' : ''} chargée${questions.length > 1 ? 's' : ''}`
+        });
+        
+        onSeriesUploaded({ 
+          questions, 
+          objective, 
+          faculty, 
+          year
+        });
       } catch (err) {
         console.error("Erreur import fichier:", err);
         setError("Erreur lors de la lecture du fichier.");
@@ -299,19 +272,9 @@ export default function UploadPage({ onSeriesUploaded, onBack }: UploadPageProps
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
       <div className="max-w-4xl mx-auto">
-        {/* Back Button */}
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="mb-4 flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900"
-          >
-            ← Retour
-          </button>
-        )}
-
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="mb-2 text-indigo-600">Plateforme de Gestion QCM Médicaux</h1>
+          <h1 className="mb-2 text-indigo-600">QCM Database Builder</h1>
           <p className="text-gray-600">Uploadez votre série et configurez les paramètres</p>
         </div>
 
